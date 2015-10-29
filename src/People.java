@@ -31,10 +31,17 @@ public class People {
                 "/",
                 ((request, response) -> {
 
-                    ArrayList<Person> temp = new ArrayList (people.subList(0,20));
-
+                    String offset = request.queryParams("offset");
+                    int offsetNum;
+                    if (offset == null) {
+                        offsetNum = 0;
+                    }else {
+                        offsetNum = Integer.valueOf(offset);
+                    }
+                    ArrayList<Person> temp = new ArrayList (people.subList(offsetNum,offsetNum+20));
                     HashMap m = new HashMap();
                     m.put("people", temp);
+                    m.put("offset", offsetNum + 20);
                     return new ModelAndView(m, "people.html");
                 }),
 
