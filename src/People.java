@@ -12,6 +12,7 @@ import java.util.HashMap;
  * Created by zach on 10/19/15.
  */
 public class People {
+    static final int SHOW_COUNT = 20;
     public static void main(String[] args) {
         ArrayList<Person> people = new ArrayList();
 
@@ -35,18 +36,55 @@ public class People {
                     int offsetNum;
                     if (offset == null) {
                         offsetNum = 0;
-                    }else {
+                    }
+                    else {
                         offsetNum = Integer.valueOf(offset);
                     }
-                    ArrayList<Person> temp = new ArrayList (people.subList(offsetNum,offsetNum+20));
+                    if (offsetNum >= people.size() || offsetNum < 0) {
+                        Spark.halt(403);
+                    }
+
+
+                    ArrayList<Person> temp = new ArrayList(people.subList(
+                            Math.max(0, Math.min(people.size(), offsetNum)),
+                            Math.max(0, Math.min(people.size(), offsetNum + SHOW_COUNT))
+                    ));
                     HashMap m = new HashMap();
-                    m.put("people", temp);
-                    m.put("offset", offsetNum + 20);
+                    m.put("people", temp); // pass into template
+                    m.put("oldOffset", offsetNum - SHOW_COUNT);
+                    m.put("newOffset", offsetNum + SHOW_COUNT);
+
+                    boolean showPervious = offsetNum > 0;
+                    m.put("showPrevious", showPervious);
+
+                    boolean showNext = offsetNum + SHOW_COUNT < people.size();
+                    m.put("showNext", showNext);
+
                     return new ModelAndView(m, "people.html");
+                }),
+                new MustacheTemplateEngine()
+        );
+
+        Spark.get(
+                "/person",
+                ((request, response) -> {
+                    HashMap m = new HashMap();
+                    String id = request.queryParams("id");
+
+                    try {
+                        int idNum = Integer.valueOf(id);
+                        Person p = people.get(idNum - 1);
+                        m.put("person", p);
+                    }
+                    catch (Exception e) {
+
+                    }
+                     return new ModelAndView(m, "person.html");
                 }),
 
                 new MustacheTemplateEngine()
-        );}
+        );
+    }
 
 
 

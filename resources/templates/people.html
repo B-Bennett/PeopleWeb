@@ -1,12 +1,18 @@
 <html>
 <body>
+
 {{#people}}
-{{firstName}} {{firstName}}<a href="/?temp={{temp}}"><br>
+{{id}}. <a href="/personal?id={{id}}">{{firstName}} {{lastName}}</a>
+<!--{{id}} {{firstName}} {{lastName}}<a href="/person?id={{id}}"</a>
+    -->
+<br>
 {{/people}}
 
 <br>
-<form>
-    <button type="submit">Next Page</button>
-</form>
+{{#showPrevious}}<a href="/?offset={{oldOffset}}">Previous</a>{{/showPrevious}}
+
+{{#showNext}}<a href="/?offset={{newOffset}}">Next</a>{{/showNext}}
+<br>
+
 </body>
 </html>
