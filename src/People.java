@@ -4,6 +4,7 @@ import spark.template.mustache.MustacheTemplateEngine;
 
 import java.io.File;
 import java.io.FileReader;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -13,20 +14,79 @@ import java.util.HashMap;
  */
 public class People {
     static final int SHOW_COUNT = 20;
-    public static void main(String[] args) {
-        ArrayList<Person> people = new ArrayList();
 
-        String fileContent = readFile("people.csv");
+    public static void createTables(Connection conn) throws SQLException {
+        Statement stmt = conn.createStatement();
+        stmt.execute("DROP TABLE IF EXISTS people");
+        stmt.execute("CREATE TABLE people " +
+                "(id IDENTITY, first_name VARCHAR, last_name VARCHAR, email VARCHAR, country VARCHAR, ip VARCHAR)");
+    }
+
+    public static void insertPerson(Connection conn, String firstName, String lastName, String email, String country, String ip) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO people VALUES (NULL, ?, ?, ?, ?, ?)");
+        stmt.setString(1, firstName);
+        stmt.setString(2, lastName);
+        stmt.setString(3, email);
+        stmt.setString(4, country);
+        stmt.setString(5, ip);
+        stmt.execute();
+    }
+
+    public static Person selectPerson(Connection conn, int id) throws SQLException {
+        Person person = new Person
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM people WHERE id = ?");
+        stmt.setInt(1, id);
+        ResultSet results = stmt.executeQuery();
+        if (results.next()) {
+            person = new Person
+            person.id = results.getInt("id");
+            person.firstName = results.getString("first_name");
+            person.lastName = results.getString("last_name");
+            person.email = results.getString("email");
+            person.country = results.getString("country");
+            person.ip = results.getString("ip");
+        }
+        return person;
+    }
+
+    public static void populateDatabase(Connection conn, String fileName) throws SQLException {
+        String fileContent = readFile(fileName);
         String[] lines = fileContent.split("\n");
-
         for (String line : lines) {
             if (line == lines[0])
                 continue;
 
             String[] columns = line.split(",");
-            Person person = new Person(Integer.valueOf(columns[0]), columns[1], columns[2], columns[3], columns[4], columns[5]);
+            String firstName = columns[1];
+            String lastName = columns[2];
+            String email = columns[3];
+            String country = columns[4];
+            String ip = columns[5];
+            insertPerson(conn, firstName, lastName, email, country, ip);
+        }
+    }
+    public static ArrayList<Person> selectPeople(Connection conn, int offset) throws SQLException{
+        ArrayList<Person> people = new ArrayList<>();
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM people LIMIT 20 OFFSET ?");
+        stmt.setInt(1, offset);
+        ResultSet results = stmt.executeQuery();
+        while (results.next()) {
+            Person person = new Person();
+            person.id = results.getInt("id");
+            person.firstName = results.getString("first_name");
+            person.lastName = results.getString("last_name");
+            person.email = results.getString("email");
+            person.country = results.getString("country");
+            person.ip = results.getString("ip");
             people.add(person);
         }
+        return people;
+    }
+
+    public static void main(String[] args) throws SQLException {
+        Connection conn = DriverManager.getConnection("jdbc:h2:./main");
+        createTables(conn);
+        populateDatabase(conn, "people.csv");
 
         Spark.get(
                 "/",
@@ -40,17 +100,10 @@ public class People {
                     else {
                         offsetNum = Integer.valueOf(offset);
                     }
-                    if (offsetNum >= people.size() || offsetNum < 0) {
-                        Spark.halt(403);
-                    }
+                    selectPeople(conn,offsetNum);
 
-
-                    ArrayList<Person> temp = new ArrayList(people.subList(
-                            Math.max(0, Math.min(people.size(), offsetNum)),
-                            Math.max(0, Math.min(people.size(), offsetNum + SHOW_COUNT))
-                    ));
                     HashMap m = new HashMap();
-                    m.put("people", temp); // pass into template
+                    m.put("people", selectPeople(conn,offsetNum)); // pass into template
                     m.put("oldOffset", offsetNum - SHOW_COUNT);
                     m.put("newOffset", offsetNum + SHOW_COUNT);
 
@@ -73,7 +126,7 @@ public class People {
 
                     try {
                         int idNum = Integer.valueOf(id);
-                        Person p = people.get(idNum - 1);
+                        Person p = selectPerson(conn,idNum);;
                         m.put("person", p);
                     }
                     catch (Exception e) {
