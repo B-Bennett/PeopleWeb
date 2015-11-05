@@ -33,12 +33,12 @@ public class People {
     }
 
     public static Person selectPerson(Connection conn, int id) throws SQLException {
-        Person person = new Person
+        Person person = new Person();
         PreparedStatement stmt = conn.prepareStatement("SELECT * FROM people WHERE id = ?");
         stmt.setInt(1, id);
         ResultSet results = stmt.executeQuery();
         if (results.next()) {
-            person = new Person
+            person = new Person();
             person.id = results.getInt("id");
             person.firstName = results.getString("first_name");
             person.lastName = results.getString("last_name");
@@ -107,11 +107,8 @@ public class People {
                     m.put("oldOffset", offsetNum - SHOW_COUNT);
                     m.put("newOffset", offsetNum + SHOW_COUNT);
 
-                    boolean showPervious = offsetNum > 0;
-                    m.put("showPrevious", showPervious);
-
-                    boolean showNext = offsetNum + SHOW_COUNT < people.size();
-                    m.put("showNext", showNext);
+                    m.put("showPrevious", true);
+                    m.put("showNext", true);
 
                     return new ModelAndView(m, "people.html");
                 }),
