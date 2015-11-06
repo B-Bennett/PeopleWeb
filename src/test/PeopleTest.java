@@ -27,7 +27,7 @@ public class PeopleTest {
     @Test
     public void testPerson() throws SQLException {
         Connection conn = startConnection();
-        People.insertPerson(conn, "Alex", "Hanger", "alex@theironyard.com", "USA", "1.2.3.4.5");
+        People.insertPerson(conn, "Kim", "House", "kim@.com", "USA", "03.838");
         Person person = People.selectPerson(conn, 1);
         endConnection(conn);
 
